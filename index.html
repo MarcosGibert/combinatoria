@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Combinatoria</title>
+     <link rel="icon" type="image/png" href="icono.png">
+     <link rel="apple-touch-icon" href="icono.png">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg: #f3f4f6;
+            --card-bg: #ffffff;
+            --text: #1f2937;
+            --text-light: #6b7280;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 500px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            color: var(--primary);
+            font-size: 1.8rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+            box-sizing: border-box;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        button {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 1rem;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        #result-area {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 2px dashed #e5e7eb;
+            text-align: center;
+            display: none; /* Oculto por defecto */
+        }
+
+        .result-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin: 0.5rem 0;
+        }
+
+        .formula-display {
+            background: #f8fafc;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            font-family: monospace;
+            color: var(--text-light);
+            margin-top: 1rem;
+            display: inline-block;
+        }
+
+        .error-msg {
+            color: var(--danger);
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            display: none;
+        }
+
+        .info-text {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-top: 0.25rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Calculadora Combinatoria</h1>
+
+    <div class="form-group">
+        <label for="operation">Tipo de Operación</label>
+        <select id="operation" onchange="toggleInputs()">
+            <option value="P">Permutación (Pn)</option>
+            <option value="V">Variación sin repetición (V n,r)</option>
+            <option value="VR">Variación con repetición (VR n,r)</option>
+            <option value="C">Combinación sin repetición (C n,r)</option>
+            <option value="CR">Combinación con repetición (CR n,r)</option>
+        </select>
+        <div class="info-text" id="op-desc">Importa el orden, intervienen todos los elementos.</div>
+    </div>
+
+    <div class="form-group">
+        <label for="n">Total de elementos (n)</label>
+        <input type="number" id="n" min="0" placeholder="Ej: 5">
+    </div>
+
+    <div class="form-group" id="r-group" style="display: none;">
+        <label for="r">Elementos a elegir (r)</label>
+        <input type="number" id="r" min="0" placeholder="Ej: 3">
+    </div>
+
+    <div id="error" class="error-msg">Error: n debe ser mayor o igual que r para esta operación.</div>
+
+    <button onclick="calculate()">Calcular</button>
+
+    <div id="result-area">
+        <div>El resultado es:</div>
+        <div class="result-value" id="output">0</div>
+        <div class="formula-display" id="formula-text">n!</div>
+    </div>
+</div>
+
+<script>
+    // Referencias al DOM
+    const opSelect = document.getElementById('operation');
+    const nInput = document.getElementById('n');
+    const rInput = document.getElementById('r');
+    const rGroup = document.getElementById('r-group');
+    const opDesc = document.getElementById('op-desc');
+    const resultArea = document.getElementById('result-area');
+    const output = document.getElementById('output');
+    const formulaText = document.getElementById('formula-text');
+    const errorMsg = document.getElementById('error');
+
+    // Descripciones para ayudar al usuario
+    const descriptions = {
+        'P': 'Importa el orden. Se usan TODOS los elementos. (n!)',
+        'V': 'Importa el orden. Se usa una PARTE de los elementos. No se repiten.',
+        'VR': 'Importa el orden. Se usa una PARTE de los elementos. Se pueden repetir.',
+        'C': 'NO importa el orden. No se repiten elementos.',
+        'CR': 'NO importa el orden. Se pueden repetir elementos.'
+    };
+
+    // Función Factorial
+    function factorial(num) {
+        if (num < 0) return -1;
+        if (num === 0 || num === 1) return 1;
+        let result = 1;
+        for (let i = 2; i <= num; i++) {
+            result *= i;
+        }
+        return result;
+    }
+
+    // Controlar visibilidad del input 'r'
+    function toggleInputs() {
+        const op = opSelect.value;
+        opDesc.textContent = descriptions[op];
+        resultArea.style.display = 'none'; // Ocultar resultado anterior
+        errorMsg.style.display = 'none';
+
+        if (op === 'P') {
+            rGroup.style.display = 'none';
+        } else {
+            rGroup.style.display = 'block';
+        }
+    }
+
+    // Función principal de cálculo
+    function calculate() {
+        const n = parseInt(nInput.value);
+        let r = parseInt(rInput.value);
+        const op = opSelect.value;
+        let result = 0;
+        let formula = '';
+        let isValid = true;
+
+        if (isNaN(n) || (op !== 'P' && isNaN(r))) {
+            alert("Por favor ingresa números válidos.");
+            return;
+        }
+
+        // Si es permutación, r no se usa (o r = n implícitamente)
+        if (op === 'P') r = n;
+
+        // Validaciones lógicas básicas
+        if (n < 0 || r < 0) {
+            showError("Los números no pueden ser negativos.");
+            return;
+        }
+
+        errorMsg.style.display = 'none';
+
+        try {
+            switch (op) {
+                case 'P': // Permutación: n!
+                    result = factorial(n);
+                    formula = `${n}!`;
+                    break;
+
+                case 'V': // Variación: n! / (n-r)!
+                    if (n < r) { showError("En variaciones sin repetición, n debe ser ≥ r"); return; }
+                    result = factorial(n) / factorial(n - r);
+                    formula = `${n}! / (${n}-${r})!`;
+                    break;
+
+                case 'VR': // Variación con Repetición: n^r
+                    // Aquí n puede ser menor que r
+                    result = Math.pow(n, r);
+                    formula = `${n}^${r}`;
+                    break;
+
+                case 'C': // Combinación: n! / (r! * (n-r)!)
+                    if (n < r) { showError("En combinaciones sin repetición, n debe ser ≥ r"); return; }
+                    result = factorial(n) / (factorial(r) * factorial(n - r));
+                    formula = `${n}! / (${r}! · (${n}-${r})!)`;
+                    break;
+
+                case 'CR': // Combinación con Repetición: (n+r-1)! / (r! * (n-1)!)
+                    // Fórmula equivalente a C(n+r-1, r)
+                    const top = n + r - 1;
+                    const bottom = n - 1;
+                    result = factorial(top) / (factorial(r) * factorial(bottom));
+                    formula = `(${n}+${r}-1)! / (${r}! · (${n}-1)!)`;
+                    break;
+            }
+
+            // Mostrar resultado
+            // Usamos toLocaleString para poner puntos de miles (ej: 1.000)
+            output.textContent = result.toLocaleString('es-ES');
+            formulaText.textContent = "Fórmula: " + formula;
+            resultArea.style.display = 'block';
+
+        } catch (e) {
+            showError("Error en el cálculo. Los números pueden ser demasiado grandes.");
+        }
+    }
+
+    function showError(msg) {
+        errorMsg.textContent = msg;
+        errorMsg.style.display = 'block';
+        resultArea.style.display = 'none';
+    }
+
+    // Inicializar estado
+    toggleInputs();
+</script>
+
+</body>
+</html>
