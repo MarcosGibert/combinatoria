@@ -50,16 +50,3 @@ Select the combinatorics operation, enter the required values for `n` and, when 
 
 This was built as a small personal learning project to make combinatorics formulas easier to experiment with. It focuses on a simple, accessible interaction model: choose an operation, enter values, and immediately see the result.
 
-## Limitations
-
-- Very large inputs can exceed JavaScript number precision or produce results that are too large to display reliably.
-- The current UI is Spanish-only.
-- Combination with repetition assumes the usual mathematical domain where `n` is positive.
-
-## Possible Improvements
-
-- Add a language toggle for Spanish and English.
-- Add example problems for each operation type.
-- Add automated tests for edge cases and large inputs.
-- Deploy with GitHub Pages and link the live version from the repository description.
-
